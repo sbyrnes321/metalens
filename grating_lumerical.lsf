@@ -1,0 +1,296 @@
+# (C) 2015 Steven Byrnes
+# calculate grating properties
+# start with data in temp/xyrr_list0.txt, then proceed to 1, 2, ...
+# ends when the file doesn't exist (so be sure to delete old files!)
+# This stuff should be set up by export_lumerical() in grating.py
+
+clear;
+
+newproject;
+
+which_grating = -1;
+
+# infinite while loop
+for(0 ; true ; 0) {
+
+which_grating = which_grating + 1;
+
+if (fileexists('temp/grating_setup' + num2str(which_grating) + '.txt') == 0) {
+  exit(2);
+}
+
+
+##### Filenames ######
+
+s_from_air_status_filename = 'grating_s_from_air_status' + num2str(which_grating) + '.txt';
+s_from_glass_status_filename = 'grating_s_from_glass_status' + num2str(which_grating) + '.txt';
+
+p_from_air_status_filename = 'grating_p_from_air_status' + num2str(which_grating) + '.txt';
+p_from_glass_status_filename = 'grating_p_from_glass_status' + num2str(which_grating) + '.txt';
+
+rm(s_from_air_status_filename);
+rm(s_from_glass_status_filename);
+
+rm(p_from_air_status_filename);
+rm(p_from_glass_status_filename);
+
+##### Fixed parameters ######
+
+degree = pi / 180;
+# x * degree is "x degrees" (expressed in radians)
+# x / degree is "angle x, expressed in degrees" 
+
+temp = readdata('temp/grating_setup' + num2str(which_grating) + '.txt');
+grating_period = temp(1);
+lateral_period = temp(2);
+angle_in_air = temp(3); #in degrees
+n_glass = temp(4);
+nTiO2 = temp(5);
+thickness = temp(6);
+
+# setting an index to 0 means "use tabulated data"
+# data comes from refractive_index.py
+if(nTiO2 == 0) {
+  f_vs_eps = [c/450e-9, 2.5^2;
+              c/500e-9, 2.433^2;
+              c/525e-9, 2.41^2;
+              c/550e-9, 2.391^2;
+              c/575e-9, 2.375^2;
+              c/580e-9, 2.372^2;
+              c/600e-9, 2.362^2;
+              c/625e-9, 2.351^2;
+              c/525e-9, 2.341^2];
+  temp = addmaterial("Sampled data");
+  setmaterial(temp,"name","tio2");
+  setmaterial("tio2","sampled data", f_vs_eps);
+}
+if(n_glass == 0) {
+  f_vs_eps = [c/450e-9, 1.466^2;
+              c/500e-9, 1.462^2;
+              c/525e-9, 1.461^2;
+              c/550e-9, 1.46^2;
+              c/575e-9, 1.459^2;
+              c/580e-9, 1.459^2;
+              c/600e-9, 1.458^2;
+              c/625e-9, 1.457^2;
+              c/525e-9, 1.457^2];
+  temp = addmaterial("Sampled data");
+  setmaterial(temp,"name","sio2");
+  setmaterial("sio2","sampled data", f_vs_eps);
+}
+
+wavelength=580e-9;
+
+x_fdtd_min = -grating_period/2;
+x_fdtd_max = grating_period/2;
+y_fdtd_min = -lateral_period/2;
+y_fdtd_max = lateral_period/2;
+
+z_cyl_bottom = 0;
+z_cyl_top = thickness;
+
+# one of these is the source, other is the monitor
+z_glass_side = -400e-9;
+z_air_side = thickness + 400e-9;
+
+z_fdtd_min = -450e-9;
+z_fdtd_max = thickness + 450e-9;
+
+#### Parameters for iterating over multiple runs ####
+
+# s polarization means Ey nonzero
+polarization_is_s_list = [true, false];
+
+# from_air = true means the light is coming from air (at angle_in_air) into glass
+# fram_air = false means the light is coming from glass (at normal) into air
+#from_air_list = [true, false];
+from_air_list = [true];
+
+####### Main loop ########
+
+for(i_pol = 1:length(polarization_is_s_list)) {
+for(i_fromair = 1:length(from_air_list)) {
+
+  newproject(2);
+  redrawoff;
+
+  polarization_is_s = polarization_is_s_list(i_pol);
+  from_air = from_air_list(i_fromair);
+
+  if (polarization_is_s) { pol_str = 's'; } else { pol_str = 'p'; }
+  if (from_air) { air_str = 'air'; } else { air_str = 'glass'; }
+  ?'running: ' + pol_str + ' polarization ; light coming from ' + air_str + ' side.';
+
+
+  ########### Set up monitor, substrate, FDTD box, cylinders, source ########
+
+  # Planar monitor for calculating overall status
+  addprofile;
+  set("name", "up");
+  set("monitor type","2D Z-normal");
+  set("override global monitor settings",true);
+  set("use linear wavelength spacing",true);
+  set("frequency points",1);
+  set("use source limits",true);
+  if(from_air) {
+    set("z",z_glass_side);
+  } else {
+    set("z", z_air_side);
+  }
+  set("x min", x_fdtd_min);
+  set("x max", x_fdtd_max);
+  set("y min", y_fdtd_min);
+  set("y max", y_fdtd_max);
+
+  addrect;
+  set("name","substrate");
+  set("x min", x_fdtd_min);
+  set("x max", x_fdtd_max);
+  set("y min", y_fdtd_min);
+  set("y max", y_fdtd_max);
+  set("z min", z_fdtd_min);
+  set("z max", z_cyl_bottom);
+  if(n_glass != 0) {
+    set("material","<Object defined dielectric>");
+    set("index",n_glass);
+  } else {
+    set("material","sio2");
+  }
+
+  addplane;
+  set("name","source");
+  set("injection axis","z-axis");
+  set("x min", x_fdtd_min);
+  set("x max", x_fdtd_max);
+  set("y min", y_fdtd_min);
+  set("y max", y_fdtd_max);
+  if (from_air) {
+    set("direction","Backward");
+    set("z", z_air_side);
+    set("angle theta", -angle_in_air);
+  } else {
+    set("direction", "Forward");
+    set("z", z_glass_side);
+    set("angle theta", 0);
+  }
+  if(polarization_is_s) {
+    set("polarization angle", 90);
+  } else {
+    set("polarization angle", 0);
+  }
+  set("wavelength start", wavelength);
+  set("wavelength stop", wavelength);
+
+  addfdtd;
+  set("x min", x_fdtd_min);
+  set("x max", x_fdtd_max);
+  set("y min", y_fdtd_min);
+  set("y max", y_fdtd_max);
+  set("z min", z_fdtd_min);
+  set("z max", z_fdtd_max); 
+  set("mesh type","auto non-uniform");
+  set("mesh accuracy",4);
+  set("y min bc", "periodic");
+  set("y max bc", "periodic");
+  if(from_air) {
+    # Note: Must be 'bloch', not 'periodic', for tilted source
+    set("x min bc", "bloch");
+    set("x max bc", "bloch");
+  } else {
+    set("x min bc", "periodic");
+    set("x max bc", "periodic");
+  }
+  # xyrra_list is (x_center, y_center, semi-x-axis, semi-y-axis, CCW rotation)
+  # (first 4 in microns, last in degrees)  
+  xyrra_list = readdata('temp/grating_xyrra_list' + num2str(which_grating) + '.txt');
+  xyrra_list = xyrra_list;
+  temp = size(xyrra_list);
+  num_cylinders = temp(1);
+  for(i = 1:num_cylinders){
+    for(shift_x = -1:1){
+      for(shift_y = -1:1){
+        addcircle;
+        set("name", 'Cylinder' + num2str(i) + '_' + num2str(shift_x) + '_' + num2str(shift_y));
+        set("make ellipsoid", true);
+        set("radius", xyrra_list(i,3) * 1e-6);
+        set("radius 2", xyrra_list(i,4) * 1e-6);
+        set("x", xyrra_list(i,1) * 1e-6 + shift_x * grating_period);
+        set("y", xyrra_list(i,2) * 1e-6 + shift_y * lateral_period);
+        set("z min", z_cyl_bottom);
+        set("z max", z_cyl_top);
+        if(nTiO2 != 0) {
+          set("material", "<Object defined dielectric>");
+          set("index", nTiO2);
+        } else {
+          set("material", "tio2");
+        }
+        if(xyrra_list(i,5) != 0) {
+          set("first axis", "z");
+          set("rotation 1", xyrra_list(i,5));
+        }
+  } } }
+
+  
+  #### Run simulation #####
+
+  redraw;
+  save("loop_temp.fsp");
+  redrawoff;
+  run;
+  redrawoff;
+  
+  ### Calculate overall status (performance) ###
+
+  T = transmission("up");
+  which_f = 1;
+  if(from_air) {
+    outgoing_index = n_glass;
+  } else {
+    outgoing_index = 1;
+  }
+  grating_power_list = grating("up", which_f, outgoing_index);
+  #(u1,u2,u3) is the 3D unit vector for a grating order
+  grating_u1_list = gratingu1("up", which_f, outgoing_index);
+  grating_u2_list = gratingu2("up", which_f, outgoing_index);
+  ####### Haven't debugged this part ##########
+  if(from_air) {
+    zsample = -1e-3;
+    E = farfieldexact("up",0,0,zsample,which_f,outgoing_index);
+    f = getdata("up","f");
+    wavelength = c/f;
+    kvac = 2*pi/wavelength;
+    propagation_phase_factor = exp(1i * -kvac * outgoing_index * (zsample - z_glass_side));
+    Ex = pinch(E,2,1) / propagation_phase_factor;
+    Ey = pinch(E,2,2) / propagation_phase_factor;
+  } else {
+    # Doesn't matter - since I'm optimizing air-to-glass I only need E at the destination
+    Ex = 0;
+    Ey = 0;
+  }
+  ########## End non-debugged part ############
+
+  if(polarization_is_s) {
+    if(from_air) {
+      filename = s_from_air_status_filename;
+    } else {
+      filename = s_from_glass_status_filename;
+    }
+    write(filename, num2str(Ey));
+  } else {
+    if(from_air) {
+      filename = p_from_air_status_filename;
+    } else {
+      filename = p_from_glass_status_filename;
+    }
+    write(filename, num2str(Ex));
+  }
+  write(filename, num2str(T));
+  for(i=1:length(grating_u1_list)) {
+    for(j=1:length(grating_u2_list)) {
+      write(filename, num2str([grating_u1_list(i), grating_u2_list(j), grating_power_list(i,j)]));
+  } }
+
+}}
+
+# end of infinite while loop
+}
