@@ -1,11 +1,11 @@
-(C) 2015 Steven Byrnes
+(C) 2015-2017 Steven Byrnes. This is free software, released under the MIT license - see bottom of this README.
 
-This is software for designing, optimizing, and simulating metasurface lenses (and metasurface beam deflectors). It was written for the purpose of doing calculations described the paper "Designing large, high-efficiency, high-numerical-aperture, transmissive meta-lenses for visible light" at http://arxiv.org/abs/1511.04781 Please refer to that paper for motivation and method. I thank the coauthors of that paper for valuable help and feedback, and I thank Osram and Draper for support.
+This is software for designing, optimizing, and simulating metasurface lenses (and metasurface beam deflectors). It was written for the purpose of doing calculations described the paper "Designing large, high-efficiency, high-numerical-aperture, transmissive meta-lenses for visible light" at https://doi.org/10.1364/OE.24.005110 Please refer to that paper for motivation and method. I thank the coauthors of that paper for valuable help and feedback, and I thank Osram and Draper for support.
 
 Set up and requirements
 =======================
 
-The Python code was written in Python 3.4. The easiest way to install Python is Anaconda: https://www.continuum.io/downloads For more Python installation and getting-started details: http://sjbyrnes.com/?page_id=67
+The Python code was written in Python 3.4. The easiest way to install Python is Anaconda: https://www.continuum.io/downloads For more Python installation and getting-started details: http://sjbyrnes.com/python/
 
 The actual electromagnetic simulation is done using S4, a rigorous coupled-wave analysis (RCWA) code. You need to download S4.exe from http://web.stanford.edu/group/fan/S4/install.html . The program expects grating.py, grating.lua, S4.exe, etc. to all be in the same folder. Then there should be a subfolder called "temp" (The python code will create it if it's not already there). The program writes configuration files (for communicating between python and S4) into "temp" and into subfolders of "temp". I set it up that way so that I could remove "temp" from dropbox. (The config files get changed by the program gizillions of times per minute, so it's silly for dropbox to try synchonizing them.)
 
@@ -43,3 +43,26 @@ grating_lumerical.lsf is a lumerical script file. It simulates the same gratings
 S4conventions.py is some tests to understand the exact definition of "output amplitude" in S4, i.e. all the phase conventions, sign conventions, polarization conventions, etc. To run this you need to uncomment some lines in grating.lua.
 
 refractive_index.py is just a little script where refractive index data for TiO2 and glass is stored.
+
+License
+=======
+
+Copyright (c) 2015-2017 Steven Byrnes
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
