@@ -273,7 +273,12 @@ def make_periphery_xyrra_list(lens_periphery_summary):
 def make_design(collections, source_distance, radius, hgs, make_xyrra_list=False):
     """calculate the design for a full round lens, including both the
     center and the periphery. hgs is the HexGridSet used for the center (see
-    lens_center.py). If make_xyrra_list is True, also return the full xyrra_list
+    lens_center.py).
+    collections is of the form [[(15*degree, 20*degree), my_grating_collection_A],
+                                [(20*degree, 33.2*degree), my_grating_collection_B],
+                                [(33.2*degree, 45*degree), my_grating_collection_C],
+                                 ...]
+    If make_xyrra_list is True, also return the full xyrra_list
     specifying the center (x,y), radii (rx,ry), and rotation angle a for every
     nano-pillar in the whole lens -- input for make_dxf() etc."""
     if len(collections) > 0:
