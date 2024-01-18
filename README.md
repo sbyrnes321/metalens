@@ -5,7 +5,7 @@ This is software for designing, optimizing, and simulating metasurface lenses (a
 Set up and requirements
 =======================
 
-The Python code is for Python 3.4 or later. The easiest way to install Python is Anaconda: https://www.continuum.io/downloads For more Python installation and getting-started details: http://sjbyrnes.com/python/
+The Python code is for Python 3.4 or later. The easiest way to install Python is Anaconda: https://www.anaconda.com/download
 
 The actual electromagnetic simulation is done using S4, a rigorous coupled-wave analysis (RCWA) code. You need to download S4.exe from http://web.stanford.edu/group/fan/S4/install.html . (UPDATE: Oops, the windows binary file S4.exe is no longer available from that website. I don’t know why. Luckily, I still have the old version of S4.exe that I used myself when writing my paper, and I have posted it at https://sjbyrnes.com/S4.exe .) The program expects `grating.py`, `grating.lua`, `S4.exe`, etc. to all be in the same folder. Then there should be a subfolder called `temp`. The program writes configuration files (for communicating between python and S4) into `temp` and into subfolders of `temp`. I set it up that way so that I could remove `temp` from dropbox. (The config files get changed by the program gizillions of times per minute, so it's silly for dropbox to synchronize them.)
 
